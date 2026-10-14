@@ -1,0 +1,191 @@
+NHL TRADING ENGINE — THREE GPT PROMPTS
+Four player pools + explicit mandatory Boolean trade logic
+Use {batch_text} for Prompt 1, {user_statement} for Prompt 2, and {demands}/{all_results} for Prompt 3.
+
+==================================== NHL_PROMPT_1 ====================================
+
+Below is a list of current NHL players grouped by team.
+
+{batch_text}
+
+Evaluate EVERY player listed.
+
+For each player, return:
+
+1. Attributes:
+- Up to 8 concise CURRENT attributes describing players physically, mentally,
+  stylistically, or by career stage.
+- Examples: age, young, veteran, height, size, strength, speed, acceleration, agility, lateral mobility, skating stride, endurance, durability, physicality, high motor, hockey IQ, leadership (only with evidence), playoff experience, injury history, consistency.
+
+2. Strengths:
+- Up to 5 meaningful CURRENT hockey strengths, where supported.
+- Possible areas: skating speed, acceleration, edgework, puck handling, stickhandling, puck protection, zone entries, controlled exits, passing, playmaking, vision, offensive-zone creation, shooting, wrist shots, slap shots, one-timers, finishing, net-front presence, screen-setting, deflections, forechecking, backchecking, puck retrieval, faceoff ability, board battles, checking, physicality, penalty killing, power-play production, transition play, defensive positioning, defensive-zone coverage, shot blocking, gap control, rush defense, stick checking, takeaways, limiting turnovers, defensive versatility, goaltending, save percentage, rebound control, positioning, lateral movement, high-danger save ability, puck tracking, puck handling as a goaltender, reliability.
+- Make strengths specific to a player's position and role; do not assign
+  positional skills to inapplicable players.
+
+3. Weaknesses:
+- Up to 5 meaningful CURRENT hockey weaknesses, drawing from applicable
+  categories above and each player's actual role.
+
+IMPORTANT RULES:
+- Be stringent. Evaluate CURRENT ability only, not historical peak or speculative potential.
+- Do NOT manufacture strengths or weaknesses to reach the maximum counts.
+- Distinguish reputation from current performance.
+- Only call someone clutch or a poor pressure performer with meaningful evidence.
+- Do not infer personality traits without reasonable public evidence.
+- Use precise hockey terminology so later code can filter players by roles,
+  attributes, strengths and weaknesses.
+- Evaluate EVERY player supplied without omission; use current information when necessary.
+- Do not move players between teams or invent players.
+
+Return exactly the following format, for every team and player:
+Team Name:
+Player Name: Attributes ["attribute 1", ...], Strengths ["strength 1", ...], Weaknesses ["weakness 1", ...]
+Player Name 2: Attributes [...], Strengths [...], Weaknesses [...]
+Next Team Name:
+Player Name: Attributes [...], Strengths [...], Weaknesses [...]
+
+Return ONLY the requested team/player information, with no introductions,
+methodology, citations, source lists, conclusions, or disclaimers.
+
+
+==================================== NHL_PROMPT_2 ====================================
+
+You are interpreting an NHL trade request for a later player-pool filter.
+Read the user statement and extract the following, without inventing names:
+
+Team Name: [user's NHL team]
+Required Acquisition Players: [named players the user explicitly requires acquiring]
+Preferred Acquisition Players: [named players the user wants or is interested in but does not require]
+Acquisition Player Types: [roles, positions, skills, traits of acceptable acquisitions]
+Preferred Outgoing Players: [named players the user explicitly wants to trade away]
+Other Allowed Outgoing Players: [named players the user permits trading without preferring to move]
+Untouchable Players: [named players never to trade]
+Untouchable Player Types: [traits or roles of players never to trade]
+Players to Avoid Acquiring: [specific names]
+Player Types to Avoid Acquiring: [traits, weaknesses, positions, roles to exclude]
+Teams to Avoid: [teams the user refuses to deal with]
+Required Trade Logic: [Python Boolean membership expressions, as quoted strings]
+
+Extract mandatory logical conditions ONLY when explicitly stated by the user.
+Use Python expressions with membership tests, and/or/not operators, parentheses,
+and the variables acquired and outgoing. Use full player names.
+Example:
+Required Trade Logic: ["('Player A' in acquired or 'Player B' in acquired)", "not ('Player A' in acquired and 'Player B' in acquired)", "('Player C' not in outgoing or 'Player A' in acquired)"]
+
+- "Either A or B, but not both" requires two expressions: A-or-B and not(A-and-B).
+- "Trade C only if acquiring A" means C not in outgoing or A in acquired.
+- "I must acquire both A and B" means A in acquired and B in acquired.
+- Use acquired ONLY for players RECEIVED by the user's team, and outgoing
+  ONLY for players SENT by the user's team.
+- The five-output system consists of four separate player dictionaries plus
+  this logic list; the list can relate players across any of the four dictionaries.
+- Do NOT infer mandatory logic for merely preferred/allowable players.
+- Do NOT introduce conditions for every player in a pool.
+- Do NOT invent position-level Boolean rules, lambda expressions, function calls,
+  or variable names other than acquired and outgoing.
+- If there is no explicit mandatory logical condition, use [].
+- Keep AND vs OR vs NOT faithful to the user's wording.
+
+Distinguish REQUIRED from merely PREFERRED acquisitions. A name being mentioned
+is not automatically mandatory. Likewise, "willing to part with" is permission,
+not a desire to trade that player. If a category is absent, put [].
+Do not invent NHL rules, roster status, contract eligibility, or trade legality.
+
+USER STATEMENT:
+{user_statement}
+
+Return only the labeled fields above, in the order shown. No Markdown or explanations.
+
+
+==================================== NHL_PROMPT_3 ====================================
+
+You build FOUR DIFFERENT player pools for an NHL trade search.
+
+USER PREFERENCES:
+{demands}
+
+PLAYER PROFILES AND THEIR CURRENT TEAMS:
+{all_results}
+
+Using ONLY supplied team rosters, player attributes, strengths, weaknesses,
+and parsed user preferences, produce EXACTLY FOUR raw Python dictionaries,
+in the following order. Each dictionary maps exact existing NHL team names
+to lists of exact existing player names. No duplicates, fabricated names,
+or empty teams.
+
+DICTIONARY 1: required_targets
+- Players on OTHER teams who are required acquisition candidates.
+- Include every explicitly mandatory acquisition and every member of an explicit
+  mandatory OR-alternative. An OR group does NOT require each member separately;
+  the separate Required Trade Logic list decides acceptable combinations.
+- Do not classify names as required merely because the user mentions them.
+- A required named player overrides general player-type avoidance, but not
+  an explicit banned-team rule unless the user provides an exception.
+
+DICTIONARY 2: tradeable_targets
+- Players on OTHER teams who are actually desirable optional acquisitions,
+  based on nonmandatory named interests or requested position, role, skill,
+  strength, or attribute.
+- Possible desired roles include: top-six winger, bottom-six forward, two-way center, faceoff specialist, playmaking center, goal-scoring winger, power-play specialist, penalty killer, shutdown defenseman, puck-moving defenseman, offensive defenseman, physical defenseman, right-shot defenseman, depth defenseman, starting goaltender, backup goaltender, net-front forward, strong skater, reliable defensive forward.
+- Select meaningful semantic matches supported by player profiles; do not stretch
+  vague similarities or simply include every otherwise-allowable player.
+- Exclude banned teams, explicitly unwanted players, and player types the
+  user rejects, subject to explicit named-player exceptions.
+- Exclude everyone already in required_targets.
+
+DICTIONARY 3: wanted_to_trade_away
+- Players on the USER'S OWN team whom the user affirmatively wants to move.
+- Desire to move is distinct from mere willingness to move.
+- Exclude untouchables unless explicitly overridden by the user.
+
+DICTIONARY 4: can_trade_away
+- Remaining players on the USER'S OWN team the user is willing to move.
+- Exclude named untouchables and those matching protected player types.
+- Interpret player-type restrictions using the supplied profiles rather than
+  relying on exact keyword matching.
+- If the user protects good two-way forwards, use supplied profiles to identify players with substantial offense AND defensive awareness, defensive-zone coverage, forechecking or penalty-killing value. If the user protects strong goaltenders, use supplied goaltending strengths rather than scoring categories.
+- Include named players explicitly permitted to move, even if they overlap a
+  broad protected type, where the user's explicit permission overrides it.
+- Include the rest of the nonprotected user-team roster unless the user says
+  ONLY certain players may be moved.
+- Exclude anyone already in wanted_to_trade_away.
+
+IMPORTANT FILTERING AND LOGIC RULES:
+1. First identify the user's own team and any excluded opposing teams.
+2. Apply user-team untouchable name and player-type restrictions.
+3. Apply other-team exclusions for names, teams, and undesired player types.
+   Examples of undesired characteristics (only when supported by profiles):
+   poor defensive positioning, weak skating, inconsistent puck control, low offensive creation, frequent turnovers, weak rebound control or poor high-danger goaltending.
+4. Keep explicitly named wanted players despite GENERAL skill/attribute avoidance
+   when their team is not banned.
+5. Construct the four pools with priority: required_targets, tradeable_targets,
+   wanted_to_trade_away, can_trade_away.
+6. The FOUR pools must be PAIRWISE DISJOINT by team/player identity.
+7. Include all players explicitly referenced in mandatory acquisition alternatives
+   in required_targets (unless disallowed by an explicit team ban).
+8. Do NOT apply AND/OR/NOT as if each referenced player were independently required.
+   That job belongs to the separate Required Trade Logic list already in
+   USER PREFERENCES. Do NOT emit a fifth object or repeat the logic here.
+9. Apply only preference-based reduction. Do NOT assume that any player is
+   legally tradeable or run salary-cap, contract, waiver, consent, draft-pick,
+   or league-specific transaction validation.
+10. Do NOT use outside knowledge, perform web searches, change a player's team,
+    fabricate a name, or create duplicate players.
+
+OUTPUT FORMAT:
+Return exactly FOUR raw Python dictionary expressions (not assignments),
+in this strict order:
+1. required_targets
+2. tradeable_targets
+3. wanted_to_trade_away
+4. can_trade_away
+
+Example (illustrative placeholder names only):
+{"Opposing Team": ["Required Player"]}
+{"Other Team": ["Interesting Player"]}
+{"My Team": ["Player To Move"]}
+{"My Team": ["Other Allowed Player"]}
+
+No headings, labels, comments, explanations, code fences, introductory text,
+concluding text, or text between the four dictionaries.
